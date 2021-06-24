@@ -4,8 +4,19 @@ import LogoImg from '../assets/images/logo.svg'
 import { Button } from '../components/Button'
 import '../styles/room.scss'
 import { RoomCode } from '../components/RoomCode'
-import { useState, FormEvent} from 'react'
+import { useState, FormEvent, useEffect} from 'react'
 import {useAuth} from '../hooks/useAuth'
+
+
+type FirebaseQuestions = Record<string, {
+    author: {
+        name:string;
+        avatar: string;
+    }
+    content: string;
+    isAnswered: boolean;
+    isHighLighted: boolean;
+}>
 
 
 type RoomParams = {
@@ -13,12 +24,50 @@ type RoomParams = {
 }
 
 
-export function Room(){
 
-const {user} = useAuth();
-const params = useParams<RoomParams>();
-const [newQuestion, setNewQuestion] = useState('')
-const roomId = params.id;
+type Question = {
+    id: string;
+    author: {
+        name:string;
+        avatar: string;
+    }
+    content: string;
+    isAnswered: boolean;
+    isHighLighted: boolean;
+}
+
+
+export function Room(){
+    const [questions, setQuestions] = useState<Question[]>([])
+    const {user} = useAuth();
+    const params = useParams<RoomParams>();
+    const [newQuestion, setNewQuestion] = useState('')
+    const roomId = params.id;
+    const [title, setTitle] = useState('')
+
+useEffect(()=>{
+const roomRef = database.ref(`rooms/${roomId}`)
+
+roomRef.on('value', room =>{
+    const databaseRoom = room.val()
+    const firebaseQuestions: FirebaseQuestions = databaseRoom.questions ?? {}
+
+    const parsedQuestions = Object.entries(firebaseQuestions).map(([key, value]) =>{
+        return {
+            id: key,
+            content: value.content,
+            author: value.author,
+            isHighLighted: value.isHighLighted,
+            isAnswered: value.isAnswered
+        }
+    })
+    setTitle(databaseRoom.title)
+    setQuestions(parsedQuestions)
+
+})
+},[roomId])
+
+
 
 async function handleSendQuestion(event: FormEvent){
     event.preventDefault()
@@ -62,8 +111,8 @@ return (
 
        <main >
            <div className="room-title">
-                <h1>Sala React</h1>
-                <span>4 Perguntas</span> </div>
+                <h1>Sala: {title}</h1>
+                {questions.length > 0 && <span>{questions.length} Pergunta(s)</span>} </div>
 
                 <form onSubmit={handleSendQuestion}>
                 <textarea 
@@ -73,10 +122,21 @@ return (
                     />  
 
                     <div className="form-footer">
-                        <span>Para enviar uma pergunta, <button>faça seu login</button>.</span>
+                        { user ? (
+                            <div className="user-info">
+                                <img src={user.avatar} alt={user.name} />
+                                <span>{user.name}</span>
+                            </div>
+                        ) : (
+                            <span>Para enviar uma pergunta, <button>faça seu login</button>.</span>
+                        )}
+
+
                         <Button type="submit" disabled={!user}>Enviar Pergunta</Button>
                     </div>
                 </form>
+
+                            {JSON.stringify(questions)}
                 </main>
            </div>
 
