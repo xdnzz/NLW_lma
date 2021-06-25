@@ -14,7 +14,16 @@
             > img {
                 max-height: 45px;
             }
-
+            >div {
+                display: flex;
+                gap:16px;
+                
+                button {
+                    height: 20px;
+                    
+                }
+            }
+            
         }
     }
 
@@ -68,6 +77,8 @@
                 .user-info {
                     display: flex;
                     align-items: center;
+                    
+
 
 
                     img {
@@ -101,6 +112,10 @@
                     }
                 }
             }
+        }
+
+        .question-list {
+            margin-top: 32px;
         }
     }
 }
