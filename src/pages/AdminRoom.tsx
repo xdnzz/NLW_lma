@@ -1,14 +1,15 @@
-import {useParams} from 'react-router-dom'
-import {database} from '../services/firebase'
+import {useHistory, useParams} from 'react-router-dom'
+//import {database} from '../services/firebase'
 import LogoImg from '../assets/images/logo.svg'
 import { Button } from '../components/Button'
 import '../styles/room.scss'
 import { RoomCode } from '../components/RoomCode'
-import { useState, FormEvent, useEffect} from 'react'
-import {useAuth} from '../hooks/useAuth'
+//import { useState, FormEvent, useEffect} from 'react'
+//import {useAuth} from '../hooks/useAuth'
 import {useRoom} from '../hooks/useRoom'
 import {Question} from '../components/Question/index'
-
+import deleteImg from '../assets/images/delete.svg'
+import { database } from '../services/firebase'
 
 type FirebaseQuestions = Record<string, {
     author: {
@@ -41,48 +42,29 @@ type Question = {
 
 export function AdminRoom(){
 
-    const {user} = useAuth();
+    //const {user} = useAuth();
+    const history = useHistory()
     const params = useParams<RoomParams>();
-    const [newQuestion, setNewQuestion] = useState('')
+
     const roomId = params.id;
     const {title, question} = useRoom(roomId)
 
- 
+    async function handleEndRoom(){
+        await database.ref(`rooms/${roomId}`).update({
+            endedAt: new Date()
+
+        })
+        history.push('/')
+        
+    }
 
 
-
-
-
-
-async function handleSendQuestion(event: FormEvent){
-    event.preventDefault()
-if(newQuestion.trim()===''){
-    return;
-}
-
-if(!user) {
-    throw new Error('You must be logged in')
-}
-
-const question = {
-    content: newQuestion,
-    author:  {
-        name: user?.name,
-        avatar: user.avatar,
-    },
-    
-    isHighLighted: false,
-    isAnswered: false
-};
-
-await database.ref(`/rooms/${roomId}/questions`).push(question)
-
-setNewQuestion('')
-
-
-}
-
-
+    async function handleDeleteQuestion(questionId: string){
+        if(window.confirm('Tem certeza que você deseja exluir esta pergunta?')){
+            await database.ref(`rooms/${roomId}/questions/${questionId}`).remove()
+            
+        }
+    }
 
      
 return (
@@ -92,7 +74,7 @@ return (
                <img src={LogoImg} alt="letmeask"/>
                <div>
                <RoomCode code={roomId}/>
-               <Button isOutlined>Encerrar Sala</Button>
+               <Button isOutlined onClick={handleEndRoom}>Encerrar Sala</Button>
              </div>
             </div>
        </header>
@@ -111,7 +93,12 @@ return (
                              key={question.id}
                              content={question.content}
                              author={question.author}
-                             />
+                             >
+                                 <button type="button"
+                                 onClick={()=> handleDeleteQuestion(question.id)}>
+                                     <img src={deleteImg}/>
+                                 </button>
+                             </Question> 
                                         )
                      })}
                     </div>
